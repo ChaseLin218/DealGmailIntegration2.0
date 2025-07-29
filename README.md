@@ -31,8 +31,8 @@ venv\Scripts\activate
 
 pip install -r requirements.txt
 
-export FLASK_APP=main.py       # Unix/macOS
+FLASK_APP=main.py flask run       # Unix/macOS
 set FLASK_APP=main.py          # Windows
-flask run
+flask run                      # Windows
 
 go to http://127.0.0.1:5000/
