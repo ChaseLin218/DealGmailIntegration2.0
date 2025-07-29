@@ -1,5 +1,5 @@
 # Setup
-git clone <repo-url>
+git clone <https://github.com/ChaseLin218/DealGmailIntegration2.0>
 cd your‑app
 python3 -m venv venv
 source venv/bin/activate
