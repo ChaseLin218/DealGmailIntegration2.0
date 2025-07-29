@@ -1,0 +1,133 @@
+<!-- index.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link
+    rel="stylesheet"
+    href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css"
+    crossorigin="anonymous"
+  />
+  <link
+    rel="stylesheet"
+    href="https://stackpath.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css"
+    crossorigin="anonymous"
+  />
+  <title>Upload Deals CSV</title>
+  <style>
+    body { background: #f8f9fa; }
+    .upload-card { max-width: 600px; margin: 5% auto; }
+    .dark-mode { background: #343a40; color: #f8f9fa; }
+    .dark-mode .card { background: #495057; color: #f8f9fa; }
+    .dark-mode .btn { border-color: #6c757d; }
+    #drop-zone {
+      border: 2px dashed #ced4da;
+      padding: 2rem;
+      text-align: center;
+      transition: background 0.3s;
+      margin-bottom: 1rem;
+    }
+    #drop-zone.dragover { background: #e9ecef; }
+    .custom-file-label { display: block; margin-top: 0.5rem; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="card upload-card shadow-sm">
+      <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+        <h4 class="mb-0"><i class="fa fa-upload"></i> Upload Your Deals CSV</h4>
+        <button id="dark-toggle" class="btn btn-sm btn-light">
+          <i class="fa fa-moon-o"></i>
+        </button>
+      </div>
+      <div class="card-body">
+        <div id="drop-zone">
+          Drag & drop CSV here
+        </div>
+        <form id="upload-form" method="POST" enctype="multipart/form-data">
+          {{ form.hidden_tag() }}
+          <input type="file" name="file" class="custom-file-input d-none" id="file-input" accept=".csv" />
+          <button type="button" id="select-file-btn" class="btn btn-secondary btn-block">
+            <i class="fa fa-file"></i> Select CSV File
+          </button>
+          <span class="custom-file-label text-muted">No file selected</span>
+          <button type="button" id="upload-btn" class="btn btn-primary btn-block mt-3">
+            <i class="fa fa-upload"></i> Upload CSV
+          </button>
+        </form>
+        <hr />
+        <div class="d-flex justify-content-between">
+          <a href="{{ url_for('sample_csv') }}" class="btn btn-outline-secondary btn-sm">
+            <i class="fa fa-download"></i> Download Sample CSV
+          </a>
+          {% if recent_uploads %}
+          <div>
+            <small>Recent uploads:</small>
+            <ul class="list-unstyled mb-0">
+              {% for u in recent_uploads %}
+              <li>{{ u.name }} <small class="text-unstyled text-muted">({{ u.time }})</small></li>
+              {% endfor %}
+            </ul>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+      <div class="card-footer text-muted text-center">
+        Supported: .csv • Max size: 5MB
+      </div>
+    </div>
+  </div>
+
+<script src="https://code.jquery.com/jquery-3.4.1.min.js" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js" crossorigin="anonymous"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/js/bootstrap.min.js" crossorigin="anonymous"></script>
+<script>
+$(function() {
+  // File selection
+  $('#select-file-btn').on('click', function() {
+    $('#file-input').click();
+  });
+  $('#file-input').on('change', function() {
+    var file = this.files[0];
+    $('.custom-file-label').text(file ? file.name : 'No file selected');
+  });
+
+  // Upload button
+  $('#upload-btn').on('click', function() {
+    if ($('#file-input')[0].files.length) {
+      $('#upload-form').submit();
+    } else {
+      alert('Please select a CSV file first.');
+    }
+  });
+
+  // Drag & drop support
+  $('#drop-zone')
+    .on('dragover', function(e) {
+      e.preventDefault(); e.stopPropagation();
+      $(this).addClass('dragover');
+    })
+    .on('dragleave', function(e) {
+      e.preventDefault(); e.stopPropagation();
+      $(this).removeClass('dragover');
+    })
+    .on('drop', function(e) {
+      e.preventDefault(); e.stopPropagation();
+      $(this).removeClass('dragover');
+      var files = e.originalEvent.dataTransfer.files;
+      if (files.length && files[0].name.endsWith('.csv')) {
+        $('#file-input')[0].files = files;
+        $('.custom-file-label').text(files[0].name);
+      } else {
+        alert('Only .csv files are allowed.');
+      }
+    });
+
+  // Dark mode toggle
+  $('#dark-toggle').on('click', function() {
+    $('body').toggleClass('dark-mode');
+    $(this).find('i').toggleClass('fa-moon-o fa-sun-o');
+  });
+});
+</script>

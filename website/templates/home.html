@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css" crossorigin="anonymous" />
+  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" crossorigin="anonymous" />
+  <title>Deals Dashboard</title>
+  <style>
+    body { overflow-x: hidden; }
+    #deals-list   { max-height: 80vh; overflow-y: auto; }
+    #deal-details { max-height: 80vh; overflow-y: auto; }
+    .list-group-item { cursor: pointer; }
+    .list-group-item.active { background-color:#007bff; border-color:#007bff; color:#fff; }
+    #generated-email { white-space: pre-wrap; font-family: monospace; }
+    #genall-spinner { display:none; }
+    .badge-status { float:right; }
+    #filter-box { width: 100%; margin-bottom: 10px; }
+    .hidden-filter { display:none !important; }
+  </style>
+</head>
+<body>
+  <nav class="navbar navbar-expand-lg navbar-light bg-light">
+    <a class="navbar-brand" href="{{ url_for('index') }}"><i class="fa fa-home"></i> Deals App</a>
+    <div class="ml-auto">
+      <button id="btn-generate-all" class="btn btn-sm btn-outline-success">
+        <i class="fa fa-cogs"></i> Generate All
+      </button>
+      <span id="genall-spinner" class="ml-2">
+        <span class="spinner-border spinner-border-sm"></span> Generating...
+      </span>
+    </div>
+  </nav>
+
+  <div class="container-fluid mt-4 mb-5">
+    <div class="row">
+      <!-- Left column -->
+      <div class="col-md-3">
+        <input id="filter-box" class="form-control form-control-sm" placeholder="Filter deals...">
+        <div class="list-group mt-2" id="deals-list">
+          {% for row in data %}
+            {% set name = row[0] %}
+            {% set status = mem_emails.get(name, {}).get('status') %}
+{% set name = row[0] %}
+{% set csv_status = row[1]|lower %}  {# value from CSV, e.g. 'pass' #}
+{% set mem_status = mem_emails.get(name, {}).get('status') %}
+
+<a class="list-group-item list-group-item-action
+   {% if mem_status == 'sent' %} list-group-item-success
+   {% elif mem_status == 'generated' %} list-group-item-info
+   {% elif mem_status == 'error' %} list-group-item-danger
+   {% elif csv_status == 'pass' %} list-group-item-secondary   {# <-- color for pass #}
+   {% elif csv_status == 'contact info issue' %} list-group-item-warning
+   {% endif %}"
+   data-index="{{ loop.index0 }}">
+  {{ name }}
+  {% if mem_status %}
+    <span class="badge badge-status
+      {% if mem_status=='sent' %} badge-success
+      {% elif mem_status=='generated' %} badge-info
+      {% elif mem_status=='error' %} badge-danger
+      {% endif %}">
+      {{ mem_status|capitalize }}
+    </span>
+  {% elif csv_status == 'pass' %}
+    <span class="badge badge-status badge-secondary">Pass</span>
+  {% elif csv_status == 'contact info issue' %}
+    <span class="badge badge-status badge-warning">Contact info issue</span>
+  {% endif %}
+</a>
+          {% endfor %}
+        </div>
+      </div>
+
+      <!-- Right column -->
+      <div class="col-md-9">
+        <div id="deal-details" class="card shadow-sm d-none">
+          <div class="card-header bg-primary text-white">
+            <h4 id="detail-title" class="mb-0"></h4>
+          </div>
+          <div class="card-body">
+            <div id="generated-email" class="border p-3 mb-3 bg-light d-none"></div>
+            <div id="detail-fields"></div>
+
+            <div class="mt-3">
+              <form id="generate-form" action="{{ url_for('button_action1') }}" method="post" class="d-inline">
+                <input type="hidden" name="item_name" id="generate-name" />
+                <input type="hidden" name="filename"  value="{{ filename }}" />
+                <button type="submit" class="btn btn-outline-success btn-sm" id="btn-generate">
+                  <i class="fa fa-cog"></i> Generate
+                </button>
+              </form>
+
+              <form id="send-form" action="{{ url_for('button_action2') }}" method="post" class="d-inline ml-1">
+                <input type="hidden" name="item_name"  id="send-name" />
+                <input type="hidden" name="filename"   value="{{ filename }}" />
+                <input type="hidden" name="gen_item"    value="{{ gen_item }}" />
+                <input type="hidden" name="gen_email"   value="{{ gen_email }}" />
+
+                <div class="form-inline mb-2">
+                  <label for="recipient-email" class="mr-2 mb-2">To:</label>
+                  <input type="email" class="form-control form-control-sm mb-2" id="recipient-email" name="to_email" placeholder="recipient@example.com" required>
+                </div>
+                <button type="submit" class="btn btn-outline-primary btn-sm" id="btn-send">
+                  <i class="fa fa-paper-plane"></i> Send
+                </button>
+              </form>
+            </div>
+          </div>
+        </div>
+        <p id="no-selection" class="text-muted">Select a transaction on the left to view details.</p>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://code.jquery.com/jquery-3.4.1.min.js" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js" crossorigin="anonymous"></script>
+  <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/js/bootstrap.min.js" crossorigin="anonymous"></script>
+  <script>
+  (function() {
+    var headers    = {{ headers|tojson }};
+    var deals      = {{ data|tojson }};
+    var genItem    = {{ gen_item|tojson }};
+    var genEmail   = {{ gen_email|tojson }};
+    var memEmails  = {{ mem_emails|tojson }};
+    var filename   = {{ filename|tojson }};
+
+    var emailIndex = headers.findIndex(function(h){ return /email/i.test(h); });
+
+    // Filter box
+    $('#filter-box').on('input', function() {
+      var v = $(this).val().toLowerCase();
+      $('#deals-list a').each(function(){
+        var txt = $(this).text().toLowerCase();
+        $(this).toggleClass('hidden-filter', txt.indexOf(v) === -1);
+      });
+    });
+
+    // Generate All handler
+    $('#btn-generate-all').on('click', function(){
+      $('#btn-generate-all').prop('disabled', true);
+      $('#genall-spinner').show();
+      fetch('{{ url_for("generate_all") }}', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ filename: filename })
+      })
+      .then(r => r.json())
+      .then(data => {
+        if(!data.ok){
+          alert('Failed: ' + (data.error || 'Unknown error'));
+        } else {
+          location.reload();
+        }
+      })
+      .catch(err => alert('Error: '+err))
+      .finally(()=>{
+        $('#btn-generate-all').prop('disabled', false);
+        $('#genall-spinner').hide();
+      });
+    });
+
+    // Click on list item
+    $('#deals-list').on('click', '.list-group-item', function() {
+      $('#deals-list .active').removeClass('active');
+      $(this).addClass('active');
+      var idx = $(this).data('index');
+      var row = deals[idx];
+      var dealName = row[0];
+
+      $('#detail-title').text(dealName);
+
+      if (memEmails[dealName]) {
+        var full = memEmails[dealName]['subject'] + "\n" + memEmails[dealName]['body'];
+        $('#generated-email').removeClass('d-none').text(full);
+      } else if (dealName === genItem && genEmail) {
+        $('#generated-email').removeClass('d-none').text(genEmail);
+      } else {
+        $('#generated-email').addClass('d-none').text('');
+      }
+
+      var html = '<dl class="row">';
+      headers.forEach(function(h,i){
+        if (i === headers.length - 1) return;
+        var val = (row[i] || '').trim();
+        html += '<dt class="col-sm-3">' + h + '</dt>';
+        if (i === emailIndex && !val) {
+          html += '<dd class="col-sm-9 text-danger">NOT AVAILABLE</dd>';
+        } else {
+          html += '<dd class="col-sm-9">' + val + '</dd>';
+        }
+      });
+      html += '</dl>';
+      $('#detail-fields').html(html);
+
+      // prefill recipient
+      if (emailIndex >= 0) {
+        var emailCell = row[emailIndex] || '';
+        var parts = emailCell.split(',');
+        var addr  = (parts.length > 1 ? parts[1] : '').trim();
+        $('#recipient-email').val(addr);
+      }
+
+      var disabled = (emailIndex >= 0 && !(row[emailIndex]||'').trim());
+      $('#btn-generate, #btn-send').prop('disabled', disabled);
+
+      $('#generate-name, #send-name').val(dealName);
+
+      $('#no-selection').hide();
+      $('#deal-details').removeClass('d-none');
+    });
+  })();
+  </script>
+</body>
+</html>
