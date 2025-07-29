@@ -21,7 +21,7 @@ A Flask‑based web app for generating and sending personalized emails to startu
 
 ```bash
 git clone https://github.com/ChaseLin218/DealGmailIntegration2.0
-cd <repo-folder>
+cd DealGmailIntegration2.0
 
 python3 -m venv venv
 # Unix/macOS
