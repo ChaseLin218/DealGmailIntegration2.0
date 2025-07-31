@@ -117,6 +117,8 @@ def csv_search_generate(targetdeal: str, targetcsv: str) -> str:
       + searchaddon_instr + search_snip
     )
 
+    print(ceo_name)
+
     print(f"\n\n[GEN] Generating email for {ceo_name} ... {dealname} ({orgweb})\n\n", flush=True)
 
     prompt = ChatPromptTemplate.from_template(full_prompt)
