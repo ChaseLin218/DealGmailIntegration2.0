@@ -11,6 +11,12 @@ A Flask‑based web app for generating and sending personalized emails to startu
 - Batch “Generate All” with progress logging  
 - Status badges (Pass, Generated, Sent, Error) & instant client‑side filter  
 
+## Work in Progress:
+
+- Let users create, preview and select from multiple email templates (e.g. intro, follow-up, investor update) rather than a single hard-coded prompt.
+- Section-level “Regenerate” buttons so you can tweak just paragraph 1 or 2 without rerunning the full prompt.
+- Dashboard of “Emails sent,” “Replies received,” “Deals in follow-up.”
+
 ## Prerequisites
 
 - **Python 3.8+**  
