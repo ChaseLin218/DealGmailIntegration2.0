@@ -28,6 +28,9 @@ Overall keep it to the point by omit all of long and general sentences and keep 
 Write only the email without describing the content or using citations.
 
 Note: Compare the web results with the startup description and use only relevant details that match the description.
+
+Important note: PLEASE USE CRUNCHBASE URL AS THE MAIN SOURCE OF INFORMATION FOR THE STARTUP. IF CRUNCHBASE URL IS NOT PROVIDED, USE THE OFFICIAL WEBSITE INSTEAD. MAKE SURE TO CROSSCHECK OTHER DATA WITH THESE TWO FIRST BEFORE USING THEM!!!!
+
 """
 
 description_instr = " The below is a short summary/description of the startup: "
@@ -132,6 +135,9 @@ def csv_search_generate(targetdeal: str, targetcsv: str) -> str:
       + (cb_summary + "\n" if cb_summary else "")
       + searchaddon_instr + search_snip
     )
+
+    print("\n\n\n\n cb_summary:", cb_summary, file=sys.stderr, flush=True)
+    print("\n\n\n")
 
     prompt = ChatPromptTemplate.from_template(full_prompt)
     chain  = prompt | model
